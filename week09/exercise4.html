@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>寻路|处理路径问题</title>
+    <style>
+        #container {
+            width: 700px;
+            display: flex;
+            flex-wrap: wrap;
+        }
+
+        .cell {
+            width: 6px;
+            height: 6px;
+            background-color: lightgray;
+            border-bottom: 1px solid white;
+            border-right: 1px solid white;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="container"></div>
+    <button onclick="localStorage['map'] = JSON.stringify(map)">save</button>
+    
+    <script>
+        // async
+        function sleep(t) {
+            return new Promise(function(resolve) {
+                setTimeout(resolve, t);
+            }) 
+        }
+        // BFS
+        async function findPath(map, start, end) {
+            let queue = [start];
+            let table = Object.create(map);
+
+            async function insert(x, y, pre) {
+                if (x < 0 || x >= HUNDER || y < 0 || y >= HUNDER) {
+                    return ;
+                }
+                if (table[HUNDER * y + x]) {
+                    return ;
+                }
+                container.children[y * HUNDER +x].style.backgroundColor = 'lightgrey';
+
+                table[HUNDER * y + x] = pre;
+                queue.push([x, y]);
+            }
+            while (queue.length) {
+                let [x, y] = queue.shift();
+                if (x === end[0] && y === end[1]) {
+                    let path = [];
+                    while (x !== start[0] || y !== start[1]) {
+                        path.push(map[y * HUNDER + x]);
+                        [x, y] = table[y * HUNDER + x];
+                        await sleep(3);
+                        container.children[y * HUNDER + x].style.backgroundColor = 'lightblue';
+                    }
+                    return path;
+                }
+                await insert(x - 1, y, [x, y]);
+                await insert(x, y - 1, [x, y]);
+                await insert(x + 1, y, [x, y]);
+                await insert(x, y + 1, [x, y]);
+            }
+            return null;
+        }
+        let map = localStorage['map'] ? JSON.parse(localStorage['map']) : Array(10000).fill(0);
+        const HUNDER = 100;
+        let container = document.getElementById('container');
+        for (let y = 0; y < HUNDER; y++) {
+            for (let x = 0; x < HUNDER; x++) {
+                let cell = document.createElement('div');
+                cell.classList.add('cell');
+                // if have blocked, then set color black
+                if (map[HUNDER * y + x] === 1) {
+                    cell.style.backgroundColor = 'black';
+                }
+
+                // edit the map
+                cell.addEventListener('mousemove', () => {
+                    if (mousedown) {
+                        if (clear) {
+                            cell.style.backgroundColor = '';
+                            map[HUNDER * y + x] = 0;
+                        } else {
+                            cell.style.backgroundColor = 'black';
+                            map[HUNDER * y + x] = 1;
+
+                        }
+                    }
+                })
+
+                container.appendChild(cell);
+            }
+        }
+
+        let mousedown = false;
+        let clear = false;
+
+        document.addEventListener('mousedown', e => {
+            mousedown = true;
+            // click the right button
+            clear = (e.which === 3)
+
+        });
+
+        document.addEventListener('mouseup', () => {
+            mousedown = false;
+        })
+
+        document.addEventListener('contextmenu', e => {
+            e.preventDefault();
+        })
+    </script>
+</body>
+</html>
